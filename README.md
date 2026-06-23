@@ -7,8 +7,18 @@
 双击：
 
 ```powershell
-一键启动并打开Web.bat
+start-web.bat
 ```
+
+中文入口也保留：`一键启动并打开Web.bat`。
+
+或使用软件入口：
+
+```powershell
+launcher.bat
+```
+
+中文入口也保留：`本地启动器.bat`。
 
 或在 PowerShell 中执行：
 
@@ -42,6 +52,28 @@ server/
 ## 模型
 
 把 `.pth`、`.onnx`、`.index` 等模型文件放入 `server/model_dir/`，或在新界面的模型库中上传。模型文件属于本地数据，不提交到 git。
+
+## 换电脑部署
+
+在旧电脑打包便携版：
+
+```powershell
+.\prepare_portable.ps1
+```
+
+或双击：
+
+```powershell
+make-portable.bat
+```
+
+把生成的 `VoiceChangerStudio-portable` 文件夹复制到新电脑后，先运行：
+
+```powershell
+check-new-pc.bat
+```
+
+检查通过后双击 `start-web.bat`。中文入口也保留：`打包便携版.bat`、`新电脑部署检查.bat`、`一键启动并打开Web.bat`。详细说明见 `docs/new-pc-deployment.md`。
 
 ## 验证
 

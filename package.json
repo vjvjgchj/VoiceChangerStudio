@@ -5,6 +5,8 @@
   "description": "Local-only voice changer studio launcher and control UI.",
   "scripts": {
     "start": "powershell -NoProfile -ExecutionPolicy Bypass -File ./launch_web.ps1",
-    "stop": "powershell -NoProfile -ExecutionPolicy Bypass -File ./stop_windows.ps1"
+    "stop": "powershell -NoProfile -ExecutionPolicy Bypass -File ./stop_windows.ps1",
+    "check:new-pc": "powershell -NoProfile -ExecutionPolicy Bypass -File ./setup_new_pc.ps1",
+    "package:portable": "powershell -NoProfile -ExecutionPolicy Bypass -File ./prepare_portable.ps1"
   }
 }
