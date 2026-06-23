@@ -74,35 +74,35 @@ These are not the future product surface, but should stay until cleanup is verif
 - `signatures/`
   - Small upstream metadata; keep until final cleanup pass.
 
-## Archive Candidates
+## Archived Original Files
 
-These look unrelated to the local-only app and are good candidates for `_archive_original/` before deletion:
+These looked unrelated to the local-only app and have been moved into `_archive_original/` for a reversible quarantine before deletion:
 
-- `.github/`
+- `_archive_original/.github/`
   - CI workflows for upstream/deployment.
-- `.vercel/`
+- `_archive_original/.vercel/`
   - Vercel deployment metadata.
-- `docker/`
-- `docker_folder/`
-- `docker_trainer/`
-- `docker_vcclient/`
-- `Dockerfile`
-- `docker-compose.yml`
-- `.dockerignore`
-- `auto_deploy.sh`
-- `base.sh`
-- `start_docker.sh`
-- `start_web.sh`
-- `start_anaconda.sh`
-- `start_v0.1.sh`
-- `start2.sh`
-- `script/`
-- `scripts/`
-- `trainer/`
-- `ANACONDA_SETUP.md`
-- `LINUX_DEPLOYMENT_GUIDE.md`
+- `_archive_original/docker/`
+- `_archive_original/docker_folder/`
+- `_archive_original/docker_trainer/`
+- `_archive_original/docker_vcclient/`
+- `_archive_original/Dockerfile`
+- `_archive_original/docker-compose.yml`
+- `_archive_original/.dockerignore`
+- `_archive_original/auto_deploy.sh`
+- `_archive_original/base.sh`
+- `_archive_original/start_docker.sh`
+- `_archive_original/start_web.sh`
+- `_archive_original/start_anaconda.sh`
+- `_archive_original/start_v0.1.sh`
+- `_archive_original/start2.sh`
+- `_archive_original/script/`
+- `_archive_original/scripts/`
+- `_archive_original/trainer/`
+- `_archive_original/ANACONDA_SETUP.md`
+- `_archive_original/LINUX_DEPLOYMENT_GUIDE.md`
 
-Recommended process: move these into `_archive_original/` in one small commit, verify local startup and `/local/`, then delete the archive in a later commit only after the app remains stable.
+Deletion gate: keep `_archive_original/` until local startup and `/local/` have been verified after multiple normal launches. Delete the archive in a later commit only after the app remains stable and the user confirms the cleanup.
 
 ## Do Not Delete Yet
 
