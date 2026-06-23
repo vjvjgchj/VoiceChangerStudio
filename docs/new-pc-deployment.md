@@ -52,6 +52,8 @@ The installer creates a local Python runtime under:
 
 It does not touch system Python and does not require Python to be in `PATH`.
 
+Running `install-env.bat` again is safe. It checks the existing CUDA runtime first and skips package installation when Python packages, key project imports, PyTorch CUDA, and ONNX Runtime `CUDAExecutionProvider` are already usable.
+
 ### What The Lightweight Package Includes
 
 - Local launcher scripts and the static local UI.

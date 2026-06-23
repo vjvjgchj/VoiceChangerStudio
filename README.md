@@ -79,6 +79,8 @@ start-web.bat
 
 这条路线只支持 NVIDIA / CUDA 11.8，不做 CPU 降级。新电脑需要安装 NVIDIA 驱动，并建议预留至少 15 GB 空间给 Python、PyTorch 和运行依赖。
 
+重复运行 `install-env.bat` 时会先检测现有 CUDA 环境；依赖、项目关键导入、PyTorch CUDA 和 ONNX CUDA provider 都可用时会跳过安装。
+
 如果你想最快迁移，也可以在旧电脑打包完整便携版：
 
 ```powershell

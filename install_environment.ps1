@@ -17,6 +17,82 @@ $pythonVersion = "3.10.11"
 $pythonInstaller = Join-Path $cacheDir "python-$pythonVersion-amd64.exe"
 $pythonUrl = "https://www.python.org/ftp/python/$pythonVersion/python-$pythonVersion-amd64.exe"
 $minimumFreeGb = 15
+$runtimeProbeCode = @"
+import importlib
+import sys
+import warnings
+
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
+
+mods = [
+    "OpenSSL",
+    "dataclasses_json",
+    "einops",
+    "faiss",
+    "fastapi",
+    "gin",
+    "librosa",
+    "local_attention",
+    "matplotlib",
+    "multipart",
+    "numpy",
+    "onnxruntime",
+    "onnxsim",
+    "parselmouth",
+    "psutil",
+    "pyworld",
+    "requests",
+    "resampy",
+    "safetensors",
+    "scipy",
+    "sklearn",
+    "socketio",
+    "sounddevice",
+    "soundfile",
+    "torch",
+    "torchaudio",
+    "torchcrepe",
+    "torchfcpe",
+    "tqdm",
+    "transformers",
+    "uvicorn",
+    "websockets",
+    "yaml",
+]
+failed = []
+for mod in mods:
+    try:
+        importlib.import_module(mod)
+    except Exception as exc:
+        failed.append(f"{mod}: {exc}")
+
+if not failed:
+    try:
+        from transformers import HubertModel, Wav2Vec2FeatureExtractor, Wav2Vec2ForCTC
+    except Exception as exc:
+        failed.append(f"transformers audio classes: {exc}")
+
+if failed:
+    print("\n".join(failed))
+    raise SystemExit(1)
+
+import torch
+import onnxruntime as ort
+
+print(f"python={sys.version.split()[0]}")
+print(f"torch={torch.__version__}, torch_cuda={torch.version.cuda}, cuda_available={torch.cuda.is_available()}")
+if not torch.cuda.is_available():
+    raise SystemExit("CUDA is not available to PyTorch. Install or update the NVIDIA driver, then rerun install-env.bat.")
+print(f"gpu={torch.cuda.get_device_name(0)}")
+
+providers = ort.get_available_providers()
+print("onnxruntime_providers=" + ",".join(providers))
+if "CUDAExecutionProvider" not in providers:
+    raise SystemExit("ONNX Runtime CUDAExecutionProvider is not available. Check NVIDIA driver and CUDA DLL search path.")
+
+print("cuda runtime ok")
+"@
 
 function Write-Step([string]$Message) {
     Write-Host ""
@@ -149,77 +225,74 @@ function Install-RuntimePackages {
 
     Add-CudaDllSearchPath
 
-    Write-Step "Upgrading pip tooling"
+    Write-Step "Preparing pip tooling"
     Invoke-Checked -FilePath $python -Arguments @("-m", "ensurepip", "--upgrade")
-    Invoke-Checked -FilePath $python -Arguments @("-m", "pip", "install", "--upgrade", "pip", "setuptools", "wheel")
+    Invoke-Checked -FilePath $python -Arguments @("-m", "pip", "install", "--no-warn-script-location", "--upgrade", "pip", "wheel")
+    Invoke-Checked -FilePath $python -Arguments @("-m", "pip", "install", "--no-warn-script-location", "setuptools<81")
 
     Write-Step "Installing PyTorch CUDA 11.8 runtime"
     Invoke-Checked -FilePath $python -Arguments @(
         "-m", "pip", "install",
+        "--no-warn-script-location",
         "torch==2.0.1+cu118",
         "torchaudio==2.0.2+cu118",
         "--extra-index-url", "https://download.pytorch.org/whl/cu118"
     )
 
     Write-Step "Installing VoiceChangerStudio runtime packages"
-    Invoke-Checked -FilePath $python -Arguments @("-m", "pip", "install", "-r", $requirements)
+    Invoke-Checked -FilePath $python -Arguments @("-m", "pip", "install", "--no-warn-script-location", "-r", $requirements)
 }
 
-function Verify-CudaRuntime {
+function Invoke-CudaRuntimeProbe {
     Add-CudaDllSearchPath
-
-    $verifyCode = @"
-import importlib
-import sys
-
-mods = [
-    "fastapi",
-    "socketio",
-    "numpy",
-    "sounddevice",
-    "faiss",
-    "librosa",
-    "torchcrepe",
-    "torchfcpe",
-    "onnxruntime",
-    "torch",
-    "torchaudio",
-]
-failed = []
-for mod in mods:
-    try:
-        importlib.import_module(mod)
-    except Exception as exc:
-        failed.append(f"{mod}: {exc}")
-if failed:
-    print("\n".join(failed))
-    raise SystemExit(1)
-
-import torch
-import onnxruntime as ort
-
-print(f"python={sys.version.split()[0]}")
-print(f"torch={torch.__version__}, torch_cuda={torch.version.cuda}, cuda_available={torch.cuda.is_available()}")
-if not torch.cuda.is_available():
-    raise SystemExit("CUDA is not available to PyTorch. Install or update the NVIDIA driver, then rerun install-env.bat.")
-print(f"gpu={torch.cuda.get_device_name(0)}")
-
-providers = ort.get_available_providers()
-print("onnxruntime_providers=" + ",".join(providers))
-if "CUDAExecutionProvider" not in providers:
-    raise SystemExit("ONNX Runtime CUDAExecutionProvider is not available. Check NVIDIA driver and CUDA DLL search path.")
-
-print("cuda runtime ok")
-"@
 
     $tempBase = [System.IO.Path]::GetTempFileName()
     $tempScript = [System.IO.Path]::ChangeExtension($tempBase, ".py")
     try {
-        Set-Content -LiteralPath $tempScript -Value $verifyCode -Encoding UTF8
-        Write-Step "Verifying CUDA runtime"
-        Invoke-Checked -FilePath $python -Arguments @($tempScript)
+        Set-Content -LiteralPath $tempScript -Value $runtimeProbeCode -Encoding UTF8
+        $previousErrorActionPreference = $ErrorActionPreference
+        $ErrorActionPreference = "Continue"
+        $output = & $python $tempScript 2>&1
+        return [pscustomobject]@{
+            ExitCode = $LASTEXITCODE
+            Output = ($output | ForEach-Object { $_.ToString() }) -join [Environment]::NewLine
+        }
     } finally {
+        if ($previousErrorActionPreference) {
+            $ErrorActionPreference = $previousErrorActionPreference
+        }
         Remove-Item -LiteralPath $tempBase, $tempScript -Force -ErrorAction SilentlyContinue
+    }
+}
+
+function Test-ExistingCudaRuntime {
+    if (-not (Test-Path -LiteralPath $python)) {
+        return $false
+    }
+
+    Write-Step "Checking existing CUDA environment"
+    $probe = Invoke-CudaRuntimeProbe
+    if ($probe.ExitCode -eq 0) {
+        Write-Host $probe.Output
+        Write-Host "Existing CUDA environment is ready. Skipping package installation." -ForegroundColor Green
+        return $true
+    }
+
+    Write-Warning "Existing environment is incomplete or broken. The installer will repair it."
+    if ($probe.Output) {
+        Write-Host $probe.Output
+    }
+    return $false
+}
+
+function Verify-CudaRuntime {
+    Write-Step "Verifying CUDA runtime"
+    $probe = Invoke-CudaRuntimeProbe
+    if ($probe.Output) {
+        Write-Host $probe.Output
+    }
+    if ($probe.ExitCode -ne 0) {
+        throw "CUDA runtime verification failed."
     }
 }
 
@@ -242,17 +315,26 @@ if ($Force -and (Test-Path -LiteralPath $envDir)) {
     Remove-Item -LiteralPath $envDir -Recurse -Force
 }
 
+$environmentReady = $false
+
 if (-not (Test-Path -LiteralPath $python)) {
     Install-LocalPython
 } else {
     Write-Step "Using existing local Python"
     & $python --version
+    if (-not $Force) {
+        $environmentReady = Test-ExistingCudaRuntime
+    }
 }
 
-Install-RuntimePackages
-
-if (-not $SkipVerification) {
-    Verify-CudaRuntime
+if (-not $environmentReady) {
+    Install-RuntimePackages
+    if (-not $SkipVerification) {
+        Verify-CudaRuntime
+    }
+} elseif (-not $SkipVerification) {
+    Write-Step "Environment check"
+    Write-Host "Dependency check already passed before install. No reinstall was needed." -ForegroundColor Green
 }
 
 Write-Step "Preparing runtime folders"

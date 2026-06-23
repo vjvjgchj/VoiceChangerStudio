@@ -209,13 +209,23 @@ if (Test-Path -LiteralPath $python) {
     if (-not $SkipImportCheck) {
         $importCode = @"
 import importlib
-mods = ["fastapi", "socketio", "numpy", "sounddevice", "onnxruntime", "torch", "torchaudio", "faiss", "librosa", "torchcrepe", "torchfcpe"]
+import warnings
+
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
+
+mods = ["fastapi", "socketio", "numpy", "sounddevice", "onnxruntime", "torch", "torchaudio", "faiss", "librosa", "torchcrepe", "torchfcpe", "transformers"]
 failed = []
 for mod in mods:
     try:
         importlib.import_module(mod)
     except Exception as exc:
         failed.append(f"{mod}: {exc}")
+if not failed:
+    try:
+        from transformers import HubertModel, Wav2Vec2FeatureExtractor, Wav2Vec2ForCTC
+    except Exception as exc:
+        failed.append(f"transformers audio classes: {exc}")
 if failed:
     print("\n".join(failed))
     raise SystemExit(1)
