@@ -11,7 +11,7 @@ This project is being reshaped into a local-only voice changer studio:
 - new clear local web UI at `/local/`
 - existing backend reused for full voice changing capability
 - runtime data and model files kept local, outside Git
-- original upstream files kept only while they are still useful for rollback or reference
+- original upstream files removed from this project directory after verification
 
 ## Git Baseline Policy
 
@@ -61,48 +61,48 @@ These are required for the current local app:
 
 These are not the future product surface, but should stay until cleanup is verified:
 
-- `client/`
-  - Old browser frontend/client library. Original `/front/` is no longer the target UI, but this may still contain reference behavior for real-time audio, settings, or API contracts.
-- `recorder/`
-  - Old standalone recorder UI. Keep as reference until local recording/history flow is stable.
 - `docs/`
   - Contains current planning notes plus old docs. Split later into active docs and archived docs.
-- `README*.md`, `LICENSE*`
+- `README.md`, `LICENSE*`
   - Keep licensing and upstream context until final product packaging is decided.
 - `server/model_dir_static/`
   - Empty placeholder/static model directory. Low risk; keep until server mounts are simplified.
 - `signatures/`
   - Small upstream metadata; keep until final cleanup pass.
 
-## Archived Original Files
+## Removed Original Files
 
-These looked unrelated to the local-only app and have been moved into `_archive_original/` for a reversible quarantine before deletion:
+These were unrelated to the local-only runtime and have been removed from this project directory. A temporary rollback/reference copy exists outside the project at `E:\VoiceChangerStudio_original_archive_20260623`:
 
-- `_archive_original/.github/`
+- `.github/`
   - CI workflows for upstream/deployment.
-- `_archive_original/.vercel/`
+- `.vercel/`
   - Vercel deployment metadata.
-- `_archive_original/docker/`
-- `_archive_original/docker_folder/`
-- `_archive_original/docker_trainer/`
-- `_archive_original/docker_vcclient/`
-- `_archive_original/Dockerfile`
-- `_archive_original/docker-compose.yml`
-- `_archive_original/.dockerignore`
-- `_archive_original/auto_deploy.sh`
-- `_archive_original/base.sh`
-- `_archive_original/start_docker.sh`
-- `_archive_original/start_web.sh`
-- `_archive_original/start_anaconda.sh`
-- `_archive_original/start_v0.1.sh`
-- `_archive_original/start2.sh`
-- `_archive_original/script/`
-- `_archive_original/scripts/`
-- `_archive_original/trainer/`
-- `_archive_original/ANACONDA_SETUP.md`
-- `_archive_original/LINUX_DEPLOYMENT_GUIDE.md`
+- `docker/`
+- `docker_folder/`
+- `docker_trainer/`
+- `docker_vcclient/`
+- `Dockerfile`
+- `docker-compose.yml`
+- `.dockerignore`
+- `auto_deploy.sh`
+- `base.sh`
+- `start_docker.sh`
+- `start_web.sh`
+- `start_anaconda.sh`
+- `start_v0.1.sh`
+- `start2.sh`
+- `script/`
+- `scripts/`
+- `trainer/`
+- `ANACONDA_SETUP.md`
+- `LINUX_DEPLOYMENT_GUIDE.md`
+- `client/`
+  - Old browser frontend/client library. No longer mounted or required for runtime.
+- `recorder/`
+  - Old standalone recorder UI. No longer mounted or required for runtime.
 
-Deletion gate: keep `_archive_original/` until local startup and `/local/` have been verified after multiple normal launches. Delete the archive in a later commit only after the app remains stable and the user confirms the cleanup.
+The external archive is not a runtime dependency. It can be deleted later after the app remains stable across normal launches and the user confirms that rollback/reference files are no longer needed.
 
 ## Do Not Delete Yet
 
@@ -113,9 +113,7 @@ Do not remove these until there is a verified replacement or explicit user confi
 - `server/sio/`
 - `server/data/`
 - `server/downloader/`
-- `client/`
-- `recorder/`
-- original C drive project copy: `C:\Users\Administrator\Documents\New project 4\voice-changer-better`
+- files outside this project directory unless the user explicitly asks for an external cleanup
 
 ## Current Size Notes
 
@@ -126,10 +124,7 @@ Largest runtime-only directories:
 - `server/pretrain/`: about 1.6 GB, ignored
 - `.tools/`: about 135 MB, ignored
 
-Tracked baseline candidate:
-
-- About 524 source/config files before adding this audit.
-- Largest tracked candidates are old frontend PSD assets in `client/demo/public/settings/`.
+Tracked source is now focused on the local app, server runtime, launchers, and docs. Old frontend and recorder source is no longer part of the project tree.
 
 ## Verification Before Cleanup
 

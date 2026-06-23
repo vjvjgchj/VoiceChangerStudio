@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>本地实时变声控制台</title>
-    <link rel="stylesheet" href="./app.css">
+    <link rel="stylesheet" href="./app.css?v=20260623-device-status">
 </head>
 <body>
     <div class="shell">
@@ -40,7 +40,7 @@
                 </div>
 
                 <div class="current-model">
-                    <img id="currentModelIcon" class="portrait" src="/assets/icons/human.png" alt="当前模型头像">
+                    <img id="currentModelIcon" class="portrait" src="./assets/icons/avatar-default.svg" alt="当前模型头像">
                     <div class="control-stack">
                         <div class="model-title-row">
                             <div>
@@ -278,6 +278,7 @@
                         <div>
                             <span>音频设备</span>
                             <strong id="runtimeAudioDevices">-</strong>
+                            <small id="runtimeBrowserDevices">-</small>
                         </div>
                     </div>
                     <div class="resource-actions">
@@ -407,6 +408,6 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
     <script src="./socket-lite.js"></script>
-    <script src="./app.js"></script>
+    <script src="./app.js?v=20260623-device-status"></script>
 </body>
 </html>

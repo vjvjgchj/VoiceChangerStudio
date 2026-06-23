@@ -55,11 +55,6 @@ LOCAL_RECORDINGS_DIR = os.path.join(tmpdir.name, "local_recordings") if hasattr(
 os.makedirs(LOCAL_RECORDINGS_DIR, exist_ok=True)
 
 
-def getFrontendPath():
-    frontend_path = os.path.join(sys._MEIPASS, "dist") if hasattr(sys, "_MEIPASS") else "../client/demo/dist"
-    return frontend_path
-
-
 EmbedderType: TypeAlias = Literal[
     "hubert_base",
     "contentvec",

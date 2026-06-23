@@ -1,8 +1,8 @@
-import os
 import sys
 
 from restapi.mods.trustedorigin import TrustedOriginMiddleware
 from fastapi import FastAPI, Request, Response, HTTPException
+from fastapi.responses import RedirectResponse
 from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
 from fastapi.exceptions import RequestValidationError
@@ -16,7 +16,7 @@ from restapi.MMVC_Rest_Fileuploader import MMVC_Rest_Fileuploader
 from restapi.MMVC_Rest_LocalRecordings import MMVC_Rest_LocalRecordings
 from restapi.MMVC_Rest_LocalModels import MMVC_Rest_LocalModels
 from restapi.MMVC_Rest_LocalSystem import MMVC_Rest_LocalSystem
-from const import MODEL_DIR_STATIC, UPLOAD_DIR, getFrontendPath, TMP_DIR
+from const import MODEL_DIR_STATIC, UPLOAD_DIR, TMP_DIR
 from voice_changer.utils.VoiceChangerParams import VoiceChangerParams
 
 logger = VoiceChangaerLogger.get_instance().getLogger()
@@ -60,27 +60,15 @@ class MMVC_Rest:
             )
 
             app_fastapi.mount(
-                "/front",
-                StaticFiles(directory=f"{getFrontendPath()}", html=True),
-                name="static",
-            )
-
-            app_fastapi.mount(
-                "/trainer",
-                StaticFiles(directory=f"{getFrontendPath()}", html=True),
-                name="static",
-            )
-
-            app_fastapi.mount(
-                "/recorder",
-                StaticFiles(directory=f"{getFrontendPath()}", html=True),
-                name="static",
-            )
-            app_fastapi.mount(
                 "/local",
                 StaticFiles(directory="local_console", html=True),
                 name="local-console",
             )
+
+            @app_fastapi.get("/", include_in_schema=False)
+            async def local_console_root():
+                return RedirectResponse(url="/local/", status_code=307)
+
             app_fastapi.mount("/tmp", StaticFiles(directory=f"{TMP_DIR}"), name="static")
             app_fastapi.mount("/upload_dir", StaticFiles(directory=f"{UPLOAD_DIR}"), name="static")
             try:
@@ -88,23 +76,11 @@ class MMVC_Rest:
             except Exception as e:
                 print("Locating model_dir_static failed", e)
 
-            if sys.platform.startswith("darwin"):
-                p1 = os.path.dirname(sys._MEIPASS)
-                p2 = os.path.dirname(p1)
-                p3 = os.path.dirname(p2)
-                model_dir = os.path.join(p3, voiceChangerParams.model_dir)
-                print("mac model_dir:", model_dir)
-                app_fastapi.mount(
-                    f"/{voiceChangerParams.model_dir}",
-                    StaticFiles(directory=model_dir),
-                    name="static",
-                )
-            else:
-                app_fastapi.mount(
-                    f"/{voiceChangerParams.model_dir}",
-                    StaticFiles(directory=voiceChangerParams.model_dir),
-                    name="static",
-                )
+            app_fastapi.mount(
+                f"/{voiceChangerParams.model_dir}",
+                StaticFiles(directory=voiceChangerParams.model_dir),
+                name="static",
+            )
 
             restHello = MMVC_Rest_Hello()
             app_fastapi.include_router(restHello.router)

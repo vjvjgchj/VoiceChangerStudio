@@ -1399,6 +1399,13 @@ body[data-theme="anime"] .diagnostics strong {
     padding-bottom: 5px;
 }
 
+.side .runtime-panel .status-grid small {
+    color: var(--muted);
+    display: block;
+    font-size: 11px;
+    margin-top: 2px;
+}
+
 body[data-theme="anime"] .runtime-panel {
     border-color: rgba(25, 200, 235, 0.42);
     background:

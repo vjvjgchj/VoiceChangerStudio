@@ -74,6 +74,7 @@ const CUSTOM_PRESETS_STORAGE_KEY = "vcb.localConsole.customPresets";
 const LOCAL_SETTINGS_STORAGE_KEY = "vcb.localConsole.settings";
 const THEME_STORAGE_KEY = "vcb.localConsole.theme";
 const DEFAULT_THEME = "anime";
+const DEFAULT_ICON_URL = "./assets/icons/avatar-default.svg";
 const themes = ["anime", "clean"];
 
 const presets = [
@@ -1095,13 +1096,24 @@ const populateDeviceSelect = (selectId, devices, fallbackLabel, selectedValue = 
     }
 };
 
-const refreshBrowserDevices = async () => {
+const requestDevicePermission = async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+        return;
+    }
+    const stream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
+    stream.getTracks().forEach((track) => track.stop());
+};
+
+const refreshBrowserDevices = async (requestPermission = false) => {
     if (!navigator.mediaDevices?.enumerateDevices) {
         setAudioStatus("浏览器不支持设备枚举");
         return;
     }
 
     try {
+        if (requestPermission) {
+            await requestDevicePermission();
+        }
         const devices = await navigator.mediaDevices.enumerateDevices();
         state.devices.inputs = devices.filter((device) => device.kind === "audioinput");
         state.devices.outputs = devices.filter((device) => device.kind === "audiooutput");
@@ -1510,7 +1522,7 @@ const emptySlots = () => {
 
 const iconUrl = (slot) => {
     if (!slot || !slot.iconFile) {
-        return "/assets/icons/human.png";
+        return DEFAULT_ICON_URL;
     }
     const modelDir = state.info?.voiceChangerParams?.model_dir || "model_dir";
     const file = String(slot.iconFile).split(/[\\/]/).pop();
@@ -1518,7 +1530,7 @@ const iconUrl = (slot) => {
 };
 
 const sampleIconUrl = (sample) => {
-    return sample.icon || "/assets/icons/human.png";
+    return sample.icon || DEFAULT_ICON_URL;
 };
 
 const setRange = (id, value) => {
@@ -1963,8 +1975,17 @@ const renderSystemStatus = () => {
     const model = selectedModel();
     const loading = state.system.deferredModelLoading || state.info?.modelLoadState === "loading";
     const modelState = model && state.info?.modelLoaded === false ? ` / ${loading ? "加载中" : "未加载"}` : "";
-    const inputCount = state.devices.inputs.length || (state.info?.serverAudioInputDevices || []).length;
-    const outputCount = state.devices.outputs.length || (state.info?.serverAudioOutputDevices || []).length;
+    const browserInputCount = state.devices.inputs.length;
+    const browserOutputCount = state.devices.outputs.length;
+    const serverInputCount = (state.info?.serverAudioInputDevices || []).length;
+    const serverOutputCount = (state.info?.serverAudioOutputDevices || []).length;
+    const hasServerDeviceCounts = serverInputCount > 0 || serverOutputCount > 0;
+    const primaryDeviceText = hasServerDeviceCounts
+        ? `后端输入 ${serverInputCount} / 输出 ${serverOutputCount}`
+        : `浏览器输入 ${browserInputCount} / 输出 ${browserOutputCount}`;
+    const browserDeviceText = hasServerDeviceCounts
+        ? `浏览器可选 ${browserInputCount} / ${browserOutputCount}`
+        : "后端设备列表读取中";
 
     if ($("runtimeBackendState")) {
         $("runtimeBackendState").textContent = backend.isRunning ? "运行中" : "离线";
@@ -1974,7 +1995,10 @@ const renderSystemStatus = () => {
         $("runtimeModel").textContent = model ? `${modelOptionLabel(model)}${modelState}` : "未加载";
         $("runtimeDevice").textContent = selectedGpu ? selectedGpu.name : device.mode || (state.info?.gpu === -1 ? "CPU" : "GPU");
         $("runtimeLatency").textContent = state.audio.lastLatencyMs === null ? (state.audio.running ? "等待数据" : "-") : `${state.audio.lastLatencyMs} ms`;
-        $("runtimeAudioDevices").textContent = `输入 ${inputCount} / 输出 ${outputCount}`;
+        $("runtimeAudioDevices").textContent = primaryDeviceText;
+        if ($("runtimeBrowserDevices")) {
+            $("runtimeBrowserDevices").textContent = browserDeviceText;
+        }
     }
 };
 
@@ -2214,8 +2238,8 @@ const bind = () => {
         stopAudio();
     });
     $("reloadDevicesButton").addEventListener("click", async () => {
-        await refreshBrowserDevices();
-        showToast("设备列表已刷新");
+        await refreshBrowserDevices(true);
+        showToast(`设备列表已刷新：浏览器输入 ${state.devices.inputs.length} / 输出 ${state.devices.outputs.length}`);
     });
     document.querySelectorAll('input[name="audioInputMode"]').forEach((input) => {
         input.addEventListener("change", renderAudioInputMode);

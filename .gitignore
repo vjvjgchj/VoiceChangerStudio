@@ -33,13 +33,6 @@ __pycache__/
 dist/
 build/
 
-# Frontend generated output
-client/lib/dist/
-client/lib/worklet/dist/
-client/demo/dist/
-client/demo/dist_web/
-recorder/dist/
-
 # OS / editor
 .DS_Store
 Thumbs.db
