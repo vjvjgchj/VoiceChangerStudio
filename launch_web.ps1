@@ -8,6 +8,23 @@ $helloUrl = "http://127.0.0.1:6006/api/hello"
 $stdoutLog = Join-Path $projectRoot "server.log"
 $stderrLog = Join-Path $projectRoot "server.err.log"
 
+function Add-CudaDllSearchPath {
+    $envDir = Join-Path $projectRoot ".mamba-root\envs\vcb-py310"
+    $paths = @(
+        (Join-Path $envDir "Lib\site-packages\torch\lib"),
+        (Join-Path $envDir "Library\bin"),
+        (Join-Path $envDir "DLLs")
+    )
+    $pathsForPrepend = @($paths)
+    [array]::Reverse($pathsForPrepend)
+    foreach ($path in $pathsForPrepend) {
+        if ((Test-Path -LiteralPath $path) -and ($env:PATH -notlike "*$path*")) {
+            $env:PATH = "$path;$env:PATH"
+        }
+    }
+    $env:PYTHONNOUSERSITE = "1"
+}
+
 function Test-VoiceChangerReady {
     try {
         $response = Invoke-WebRequest -UseBasicParsing -Uri $helloUrl -TimeoutSec 1
@@ -27,8 +44,10 @@ if (Test-VoiceChangerReady) {
 }
 
 if (-not (Test-Path -LiteralPath $python)) {
-    throw "Python environment not found: $python"
+    throw "Python environment not found: $python. Run install-env.bat first."
 }
+
+Add-CudaDllSearchPath
 
 $listener = Get-VoiceChangerListener
 if (-not $listener) {

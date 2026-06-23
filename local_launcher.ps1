@@ -36,7 +36,8 @@ function Get-VoiceChangerProcess {
 
 function Start-VoiceChanger {
     if (-not (Test-Path -LiteralPath $python)) {
-        [System.Windows.Forms.MessageBox]::Show("Python environment was not found:`n$python", "Voice Changer", "OK", "Error") | Out-Null
+        $installBat = Join-Path $projectRoot "install-env.bat"
+        [System.Windows.Forms.MessageBox]::Show("Python CUDA environment was not found:`n$python`n`nRun install-env.bat first:`n$installBat", "Voice Changer", "OK", "Error") | Out-Null
         return
     }
     $script = Join-Path $projectRoot "launch_web.ps1"

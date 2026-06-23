@@ -10,6 +10,8 @@ $serverDir = Join-Path $projectRoot "server"
 $python = Join-Path $projectRoot ".mamba-root\envs\vcb-py310\python.exe"
 $node = Join-Path $projectRoot ".tools\node-v20.20.2-win-x64\node.exe"
 $launchScript = Join-Path $projectRoot "launch_web.ps1"
+$installScript = Join-Path $projectRoot "install_environment.ps1"
+$installBat = Join-Path $projectRoot "install-env.bat"
 
 $checks = New-Object System.Collections.Generic.List[object]
 
@@ -26,6 +28,23 @@ function Ensure-Directory([string]$Path) {
     if (-not (Test-Path -LiteralPath $Path)) {
         New-Item -ItemType Directory -Path $Path -Force | Out-Null
     }
+}
+
+function Add-CudaDllSearchPath {
+    $envDir = Join-Path $projectRoot ".mamba-root\envs\vcb-py310"
+    $paths = @(
+        (Join-Path $envDir "Lib\site-packages\torch\lib"),
+        (Join-Path $envDir "Library\bin"),
+        (Join-Path $envDir "DLLs")
+    )
+    $pathsForPrepend = @($paths)
+    [array]::Reverse($pathsForPrepend)
+    foreach ($path in $pathsForPrepend) {
+        if ((Test-Path -LiteralPath $path) -and ($env:PATH -notlike "*$path*")) {
+            $env:PATH = "$path;$env:PATH"
+        }
+    }
+    $env:PYTHONNOUSERSITE = "1"
 }
 
 function ConvertTo-CommandLineArgument([string]$Argument) {
@@ -178,6 +197,8 @@ Add-Check "Runtime folders" "OK" "Model, pretrain, upload, temp, log, and record
 if (Test-Path -LiteralPath $python) {
     Add-Check "Python environment" "OK" $python
 
+    Add-CudaDllSearchPath
+
     $versionResult = Invoke-PythonSnippet -Code "import sys`nprint(sys.version)" -TimeoutSeconds 15
     if ($versionResult.ExitCode -eq 0) {
         Add-Check "Python launch" "OK" ($versionResult.Output -replace "`r?`n", " ")
@@ -188,7 +209,7 @@ if (Test-Path -LiteralPath $python) {
     if (-not $SkipImportCheck) {
         $importCode = @"
 import importlib
-mods = ["fastapi", "socketio", "numpy", "sounddevice", "onnxruntime", "torch"]
+mods = ["fastapi", "socketio", "numpy", "sounddevice", "onnxruntime", "torch", "torchaudio", "faiss", "librosa", "torchcrepe", "torchfcpe"]
 failed = []
 for mod in mods:
     try:
@@ -204,7 +225,27 @@ print("critical imports ok")
         if ($importResult.ExitCode -eq 0) {
             Add-Check "Python packages" "OK" $importResult.Output
         } else {
-            Add-Check "Python packages" "FAIL" $importResult.Output "Use a portable package that includes .mamba-root, or rebuild the Python environment."
+            Add-Check "Python packages" "FAIL" $importResult.Output "Run install-env.bat to rebuild the CUDA environment."
+        }
+
+        $cudaCode = @"
+import torch
+import onnxruntime as ort
+
+print(f"torch={torch.__version__}, torch_cuda={torch.version.cuda}, cuda_available={torch.cuda.is_available()}")
+if not torch.cuda.is_available():
+    raise SystemExit("PyTorch cannot use CUDA.")
+print(f"gpu={torch.cuda.get_device_name(0)}")
+providers = ort.get_available_providers()
+print("providers=" + ",".join(providers))
+if "CUDAExecutionProvider" not in providers:
+    raise SystemExit("ONNX Runtime CUDAExecutionProvider is missing.")
+"@
+        $cudaResult = Invoke-PythonSnippet -Code $cudaCode -TimeoutSeconds 60
+        if ($cudaResult.ExitCode -eq 0) {
+            Add-Check "CUDA runtime" "OK" ($cudaResult.Output -replace "`r?`n", " / ")
+        } else {
+            Add-Check "CUDA runtime" "FAIL" $cudaResult.Output "Install or update the NVIDIA driver, then run install-env.bat again."
         }
 
         $audioCode = @"
@@ -224,7 +265,8 @@ print(f"inputs={inputs}, outputs={outputs}")
         Add-Check "Python packages" "WARN" "Import check skipped by -SkipImportCheck."
     }
 } else {
-    Add-Check "Python environment" "FAIL" "Missing: $python" "Use prepare_portable.ps1 on the old computer and include the Python environment."
+    $fix = if (Test-Path -LiteralPath $installBat) { "Run install-env.bat to create the local CUDA Python environment." } elseif (Test-Path -LiteralPath $installScript) { "Run install_environment.ps1 to create the local CUDA Python environment." } else { "Copy a full portable package that includes .mamba-root, or restore install-env.bat." }
+    Add-Check "Python environment" "FAIL" "Missing: $python" $fix
 }
 
 if (Test-Path -LiteralPath $node) {
@@ -293,10 +335,11 @@ try {
     $driveName = ([System.IO.Path]::GetPathRoot($projectRoot)).Substring(0, 1)
     $drive = Get-PSDrive -Name $driveName -ErrorAction Stop
     $freeGb = [math]::Round($drive.Free / 1GB, 1)
-    if ($freeGb -ge 5) {
+    $minimumFreeGb = if (Test-Path -LiteralPath $python) { 5 } else { 15 }
+    if ($freeGb -ge $minimumFreeGb) {
         Add-Check "Disk space" "OK" "$freeGb GB free on $driveName`:."
     } else {
-        Add-Check "Disk space" "WARN" "$freeGb GB free on $driveName`:." "Keep at least 5 GB free for logs, uploads, recordings, and model work."
+        Add-Check "Disk space" "WARN" "$freeGb GB free on $driveName`:." "Keep at least $minimumFreeGb GB free. The CUDA environment install needs more space than daily use."
     }
 } catch {
     Add-Check "Disk space" "WARN" $_.Exception.Message

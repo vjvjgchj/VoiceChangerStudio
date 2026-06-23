@@ -55,7 +55,31 @@ server/
 
 ## 换电脑部署
 
-在旧电脑打包便携版：
+推荐做轻量 CUDA 安装包：包里只放项目源码、启动器、检查器和安装器；新电脑现场安装本地 Python CUDA 环境，不复制旧电脑的大 `.mamba-root`。
+
+旧电脑双击：
+
+```powershell
+make-light-package.bat
+```
+
+或执行：
+
+```powershell
+.\prepare_light_package.ps1
+```
+
+把生成的 `VoiceChangerStudio-light` 文件夹复制到新电脑后：
+
+```powershell
+install-env.bat
+check-new-pc.bat
+start-web.bat
+```
+
+这条路线只支持 NVIDIA / CUDA 11.8，不做 CPU 降级。新电脑需要安装 NVIDIA 驱动，并建议预留至少 15 GB 空间给 Python、PyTorch 和运行依赖。
+
+如果你想最快迁移，也可以在旧电脑打包完整便携版：
 
 ```powershell
 .\prepare_portable.ps1
@@ -67,13 +91,13 @@ server/
 make-portable.bat
 ```
 
-把生成的 `VoiceChangerStudio-portable` 文件夹复制到新电脑后，先运行：
+完整便携版会复制 `.mamba-root`、预训练权重和模型，体积更大，但新电脑安装步骤更少。把生成的 `VoiceChangerStudio-portable` 文件夹复制到新电脑后，先运行：
 
 ```powershell
 check-new-pc.bat
 ```
 
-检查通过后双击 `start-web.bat`。中文入口也保留：`打包便携版.bat`、`新电脑部署检查.bat`、`一键启动并打开Web.bat`。详细说明见 `docs/new-pc-deployment.md`。
+检查通过后双击 `start-web.bat`。中文入口也保留：`打包轻量安装包.bat`、`安装运行环境.bat`、`打包便携版.bat`、`新电脑部署检查.bat`、`一键启动并打开Web.bat`。详细说明见 `docs/new-pc-deployment.md`。
 
 ## 验证
 
