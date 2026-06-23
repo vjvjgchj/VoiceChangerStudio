@@ -1,0 +1,46 @@
+# Local runtime and toolchains
+.mamba-root/
+.tools/
+venv/
+node_modules/
+
+# Voice changer data
+server/model_dir/
+server/pretrain/
+server/upload_dir/
+server/tmp_dir/
+server/local_recordings/
+server/logs/
+server/stored_setting.json
+server/stored_setting.json.bak-*
+server/vcclient.log
+server/*.wav
+
+# Root runtime data
+logs/
+tmp_dir/
+upload_dir/
+stored_setting.json
+*.log
+*.err.log
+info_snapshot*.json
+verify_*.png
+
+# Python / build caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+dist/
+build/
+
+# Frontend generated output
+client/lib/dist/
+client/lib/worklet/dist/
+client/demo/dist/
+client/demo/dist_web/
+recorder/dist/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/

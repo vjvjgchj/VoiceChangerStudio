@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>本地实时变声控制台</title>
+    <link rel="stylesheet" href="./app.css">
+</head>
+<body>
+    <div class="shell">
+        <header class="topbar">
+            <div>
+                <div class="eyebrow">Local Voice Changer</div>
+                <h1>本地实时变声控制台</h1>
+            </div>
+            <div class="status-strip">
+                <label class="theme-control">
+                    <span>主题</span>
+                    <select id="themeSelect" aria-label="界面主题">
+                        <option value="anime">Anime Pop</option>
+                        <option value="clean">Clean Light</option>
+                    </select>
+                </label>
+                <span id="serverStatus" class="pill pill-ok">连接中</span>
+                <span id="gpuStatus" class="pill">GPU</span>
+                <span id="modelCount" class="pill">模型</span>
+            </div>
+        </header>
+
+        <main class="layout">
+            <section class="panel panel-primary">
+                <div class="panel-head">
+                    <div>
+                        <h2>当前模型</h2>
+                        <p id="currentModelMeta">读取中</p>
+                    </div>
+                    <div class="actions">
+                        <button id="refreshButton" class="button secondary" type="button">刷新全部</button>
+                    </div>
+                </div>
+
+                <div class="current-model">
+                    <img id="currentModelIcon" class="portrait" src="/assets/icons/human.png" alt="当前模型头像">
+                    <div class="control-stack">
+                        <div class="model-title-row">
+                            <div>
+                                <div class="label">姓名</div>
+                                <div id="currentModelName" class="model-name">未选择模型</div>
+                            </div>
+                        </div>
+
+                        <div class="field-grid">
+                            <label>
+                                <span>曲调 / Tune</span>
+                                <input id="tune" type="range" min="-50" max="50" step="1">
+                                <strong id="tuneValue">0</strong>
+                            </label>
+                            <label>
+                                <span>索引 / Index</span>
+                                <input id="indexRatio" type="range" min="0" max="1" step="0.01">
+                                <strong id="indexRatioValue">0</strong>
+                            </label>
+                            <label>
+                                <span>保护 / Protect</span>
+                                <input id="protect" type="range" min="0" max="0.5" step="0.01">
+                                <strong id="protectValue">0.5</strong>
+                            </label>
+                            <label>
+                                <span>静音阈值</span>
+                                <input id="silentThreshold" type="range" min="0" max="0.001" step="0.00001">
+                                <strong id="silentThresholdValue">0</strong>
+                            </label>
+                        </div>
+
+                        <div class="live-console">
+                            <div class="live-head">
+                                <div>
+                                    <div class="label">实时变声</div>
+                                    <div id="audioStatus" class="live-status">已停止</div>
+                                    <div id="audioTransport" class="live-transport">Socket.IO / AudioWorklet</div>
+                                </div>
+                                <div class="transport">
+                                    <button id="startAudioButton" class="primary" type="button">开始</button>
+                                    <button id="stopAudioButton" type="button" disabled>停止</button>
+                                    <button id="reloadDevicesButton" type="button">刷新设备</button>
+                                    <label class="switch-row live-switch">
+                                        <input id="passThrough" type="checkbox">
+                                        <span>原声直通</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="source-tabs" role="radiogroup" aria-label="输入来源">
+                                <label class="source-option">
+                                    <input type="radio" name="audioInputMode" value="mic" checked>
+                                    <span>麦克风</span>
+                                </label>
+                                <label class="source-option">
+                                    <input type="radio" name="audioInputMode" value="file">
+                                    <span>音频文件</span>
+                                </label>
+                            </div>
+                            <div class="device-grid">
+                                <label id="micInputField">
+                                    <span>麦克风输入</span>
+                                    <select id="audioInputSelect"></select>
+                                </label>
+                                <div id="fileInputField" class="file-input-field" hidden>
+                                    <label>
+                                    <span>输入文件</span>
+                                    <input id="audioInputFile" type="file" accept="audio/*,.wav,.mp3,.flac,.ogg,.m4a,.aac">
+                                    </label>
+                                    <label class="switch-row file-save-switch">
+                                        <input id="autoSaveFileResult" type="checkbox" checked>
+                                        <span>保存转换结果到历史</span>
+                                    </label>
+                                    <small id="audioFileStatus" class="field-note">未选择文件</small>
+                                    <div id="fileProgressPanel" class="file-progress-panel" hidden>
+                                        <div class="file-progress-head">
+                                            <span id="fileProgressLabel">等待文件输入</span>
+                                            <strong id="fileProgressPercent">0%</strong>
+                                        </div>
+                                        <progress id="fileProgressBar" value="0" max="100"></progress>
+                                        <div class="file-progress-meta">
+                                            <span id="fileElapsed">00:00</span>
+                                            <span id="fileRemaining">剩余 --:--</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <label>
+                                    <span>声音输出</span>
+                                    <select id="audioOutputSelect"></select>
+                                </label>
+                            </div>
+                            <div class="audio-metrics">
+                                <div>
+                                    <span>发送</span>
+                                    <strong id="audioRequestCount">0</strong>
+                                </div>
+                                <div>
+                                    <span>返回</span>
+                                    <strong id="audioResponseCount">0</strong>
+                                </div>
+                                <div>
+                                    <span>延迟</span>
+                                    <strong id="audioLatency">-</strong>
+                                </div>
+                                <div>
+                                    <span>丢弃</span>
+                                    <strong id="audioDropCount">0</strong>
+                                </div>
+                                <div>
+                                    <span>输出队列</span>
+                                    <strong id="audioBufferLevel">0</strong>
+                                </div>
+                                <div>
+                                    <span>音量</span>
+                                    <strong id="audioVolume">0%</strong>
+                                </div>
+                            </div>
+                            <div class="record-panel">
+                                <div class="record-head">
+                                    <div>
+                                        <div class="label">录音</div>
+                                        <p id="recordingStatus">保存输入与输出 WAV，停止后可试听和下载。</p>
+                                    </div>
+                                    <div class="record-actions">
+                                        <button id="startRecordButton" type="button">开始录音</button>
+                                        <button id="stopRecordButton" type="button" disabled>停止并加载</button>
+                                    </div>
+                                </div>
+                                <div id="recordResults" class="record-results" hidden>
+                                    <div class="record-grid">
+                                        <div class="record-item">
+                                            <span>输入原音</span>
+                                            <audio id="recordInputAudio" controls preload="none"></audio>
+                                            <a id="downloadInputRecord" class="button secondary" href="/tmp/in.wav" download="input.wav">下载输入</a>
+                                        </div>
+                                        <div class="record-item">
+                                            <span>变声输出</span>
+                                            <audio id="recordOutputAudio" controls preload="none"></audio>
+                                            <a id="downloadOutputRecord" class="button secondary" href="/tmp/out.wav" download="output.wav">下载输出</a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="record-history">
+                                    <div class="record-history-head">
+                                        <div>
+                                            <div class="label">历史记录</div>
+                                            <p id="recordHistoryStatus">正在读取历史记录</p>
+                                        </div>
+                                        <button id="refreshRecordingsButton" type="button">刷新历史</button>
+                                    </div>
+                                    <div id="recordHistoryList" class="history-list"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <aside class="side">
+                <section class="panel">
+                    <div class="panel-head">
+                        <div>
+                            <h2>参数预设</h2>
+                            <p id="activePreset">平衡</p>
+                        </div>
+                        <div class="actions">
+                            <button id="savePresetButton" type="button">保存当前</button>
+                        </div>
+                    </div>
+                    <div class="preset-grid" id="presetGrid"></div>
+                </section>
+
+                <section class="panel">
+                    <div class="panel-head">
+                        <div>
+                            <h2>性能</h2>
+                            <p>延迟 / GPU / F0</p>
+                        </div>
+                    </div>
+                    <div class="form-stack">
+                        <label>
+                            <span>F0 检测器</span>
+                            <select id="f0Detector"></select>
+                        </label>
+                        <label>
+                            <span>块状</span>
+                            <select id="serverReadChunkSize"></select>
+                        </label>
+                        <label>
+                            <span>附加内容</span>
+                            <select id="extraConvertSize"></select>
+                        </label>
+                        <label>
+                            <span>显卡</span>
+                            <select id="gpu"></select>
+                        </label>
+                    </div>
+                </section>
+
+                <section class="panel runtime-panel">
+                    <div class="panel-head">
+                        <div>
+                            <h2>运行状态</h2>
+                            <p>后端、模型、资源占用和实时延迟。</p>
+                        </div>
+                    </div>
+                    <div class="status-grid">
+                        <div>
+                            <span>后端</span>
+                            <strong id="runtimeBackendState">读取中</strong>
+                        </div>
+                        <div>
+                            <span>端口</span>
+                            <strong id="runtimePort">-</strong>
+                        </div>
+                        <div>
+                            <span>PID</span>
+                            <strong id="runtimePid">-</strong>
+                        </div>
+                        <div>
+                            <span>Python 内存</span>
+                            <strong id="runtimeMemory">-</strong>
+                        </div>
+                        <div>
+                            <span>当前模型</span>
+                            <strong id="runtimeModel">-</strong>
+                        </div>
+                        <div>
+                            <span>计算设备</span>
+                            <strong id="runtimeDevice">-</strong>
+                        </div>
+                        <div>
+                            <span>实时延迟</span>
+                            <strong id="runtimeLatency">-</strong>
+                        </div>
+                        <div>
+                            <span>音频设备</span>
+                            <strong id="runtimeAudioDevices">-</strong>
+                        </div>
+                    </div>
+                    <div class="resource-actions">
+                        <button id="stopBackendButton" class="danger-button" type="button">停止服务</button>
+                        <button id="restartBackendButton" type="button">重启服务</button>
+                    </div>
+                    <div class="resource-actions maintenance-actions">
+                        <button id="releaseAudioButton" type="button">释放实时链路</button>
+                        <button id="releaseModelButton" class="danger-button" type="button">卸载当前模型</button>
+                    </div>
+                    <p class="notice">停止服务可释放最多内存；只想换模型时，优先卸载当前模型实例。</p>
+                </section>
+            </aside>
+
+        <section class="panel model-library-panel">
+            <div class="panel-head">
+                <div>
+                    <h2>模型库</h2>
+                    <p>点击模型即可切换；下载样例会放入空槽。</p>
+                </div>
+            </div>
+            <details id="uploadPanel" class="upload-panel">
+                <summary class="upload-summary">
+                    <div>
+                        <h3>上传 RVC 模型</h3>
+                        <p id="uploadStatus">支持 .onnx / .pth，可选 .index / .bin。</p>
+                    </div>
+                    <span id="uploadPanelAction" class="summary-action">展开上传</span>
+                </summary>
+                <form id="uploadForm" class="upload-box">
+                    <div class="upload-grid">
+                        <label>
+                            <span>目标槽位</span>
+                            <select id="uploadSlot"></select>
+                        </label>
+                        <label>
+                            <span>模型文件</span>
+                            <input id="uploadModelFile" type="file" accept=".onnx,.pth">
+                        </label>
+                        <label>
+                            <span>索引文件</span>
+                            <input id="uploadIndexFile" type="file" accept=".index,.bin">
+                        </label>
+                        <label class="switch-row upload-switch">
+                            <input id="activateUploadedModel" type="checkbox" checked>
+                            <span>上传后切换到该模型</span>
+                        </label>
+                        <div class="upload-submit">
+                            <button id="uploadModelButton" class="primary" type="submit">上传并加载</button>
+                        </div>
+                    </div>
+                </form>
+            </details>
+            <div id="modelGrid" class="model-grid"></div>
+        </section>
+        </main>
+
+        <section class="settings">
+            <details id="samplePanel" class="panel sample-panel fold-panel">
+                <summary class="sample-summary fold-summary">
+                    <div>
+                        <h2>样例库</h2>
+                        <p>需要官方样例模型时再展开。</p>
+                    </div>
+                    <span class="summary-action">展开</span>
+                </summary>
+                <div class="toolbar">
+                    <label>
+                        <span>目标槽位</span>
+                        <select id="sampleTargetSlot"></select>
+                    </label>
+                    <label>
+                        <span>语言</span>
+                        <select id="sampleLanguage"></select>
+                    </label>
+                </div>
+                <div id="sampleGrid" class="sample-grid"></div>
+            </details>
+
+            <section class="panel defaults-panel">
+                <div class="panel-head">
+                    <div>
+                        <h2>设置中心</h2>
+                        <p>默认设备、默认模型和默认参数会保存在本地。</p>
+                    </div>
+                </div>
+                <div class="form-stack">
+                    <label>
+                        <span>默认麦克风</span>
+                        <select id="defaultInputDevice"></select>
+                    </label>
+                    <label>
+                        <span>默认输出设备</span>
+                        <select id="defaultOutputDevice"></select>
+                    </label>
+                    <label>
+                        <span>默认模型</span>
+                        <select id="defaultModelSlot"></select>
+                    </label>
+                    <label class="switch-row">
+                        <input id="defaultAutoSaveFileResult" type="checkbox">
+                        <span>文件转换默认保存到历史</span>
+                    </label>
+                    <div class="default-summary" id="defaultSettingsSummary">尚未保存默认参数</div>
+                    <div class="resource-actions">
+                        <button id="saveDefaultsButton" class="primary" type="button">设为启动默认</button>
+                        <button id="applyDefaultsButton" type="button">应用启动默认</button>
+                        <button id="clearDefaultsButton" type="button">清空启动默认</button>
+                    </div>
+                </div>
+            </section>
+
+            <details id="startupPanel" class="panel startup-panel fold-panel">
+                <summary class="fold-summary">
+                    <div>
+                        <h2>首启动检查</h2>
+                        <p id="startupSummaryStatus">正在检查本地环境</p>
+                    </div>
+                    <span class="summary-action">查看明细</span>
+                </summary>
+                <div id="startupChecks" class="check-list">
+                    <div class="empty-state">正在检查本地环境</div>
+                </div>
+            </details>
+        </section>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="./socket-lite.js"></script>
+    <script src="./app.js"></script>
+</body>
+</html>
