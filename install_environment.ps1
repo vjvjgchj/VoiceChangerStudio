@@ -11,11 +11,14 @@ $envDir = Join-Path $projectRoot ".mamba-root\envs\vcb-py310"
 $python = Join-Path $envDir "python.exe"
 $toolsDir = Join-Path $projectRoot ".tools"
 $cacheDir = Join-Path $toolsDir "cache"
+$pipCacheDir = Join-Path $toolsDir "pip-cache"
+$installTempDir = Join-Path $toolsDir "install-temp"
 $requirements = Join-Path $projectRoot "requirements-runtime-cuda118.txt"
 $setupCheck = Join-Path $projectRoot "setup_new_pc.ps1"
 $pythonVersion = "3.10.11"
-$pythonInstaller = Join-Path $cacheDir "python-$pythonVersion-amd64.exe"
-$pythonUrl = "https://www.python.org/ftp/python/$pythonVersion/python-$pythonVersion-amd64.exe"
+$pythonPackage = Join-Path $cacheDir "python.$pythonVersion.nupkg"
+$pythonPackageUrl = "https://www.nuget.org/api/v2/package/python/$pythonVersion"
+$pythonPackageExtractDir = Join-Path $cacheDir "python-$pythonVersion-nuget"
 $minimumFreeGb = 15
 $runtimeProbeCode = @"
 import importlib
@@ -124,6 +127,31 @@ function Ensure-Directory([string]$Path) {
     }
 }
 
+function Remove-DirectoryInsideProject([string]$Path) {
+    if (-not (Test-Path -LiteralPath $Path)) {
+        return
+    }
+
+    $projectFullPath = [System.IO.Path]::GetFullPath($projectRoot).TrimEnd('\')
+    $targetFullPath = [System.IO.Path]::GetFullPath($Path).TrimEnd('\')
+    if (-not $targetFullPath.StartsWith($projectFullPath + "\", [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "Refusing to remove a directory outside this project: $targetFullPath"
+    }
+
+    Remove-Item -LiteralPath $Path -Recurse -Force
+}
+
+function Use-LocalInstallScratch {
+    Ensure-Directory $cacheDir
+    Ensure-Directory $pipCacheDir
+    Ensure-Directory $installTempDir
+
+    $env:TEMP = $installTempDir
+    $env:TMP = $installTempDir
+    $env:PIP_CACHE_DIR = $pipCacheDir
+    $env:PIP_DISABLE_PIP_VERSION_CHECK = "1"
+}
+
 function Add-CudaDllSearchPath {
     $paths = @(
         (Join-Path $envDir "Lib\site-packages\torch\lib"),
@@ -181,29 +209,30 @@ function Test-DiskSpace {
 }
 
 function Install-LocalPython {
+    Use-LocalInstallScratch
     Ensure-Directory $cacheDir
-    Download-FileIfNeeded -Url $pythonUrl -Path $pythonInstaller -MinimumBytes 20000000
+    Download-FileIfNeeded -Url $pythonPackageUrl -Path $pythonPackage -MinimumBytes 10000000
 
     Ensure-Directory (Split-Path -Parent $envDir)
     Write-Step "Installing local Python $pythonVersion"
-    $installArgs = @(
-        "/quiet",
-        "InstallAllUsers=0",
-        "TargetDir=`"$envDir`"",
-        "Include_pip=1",
-        "Include_launcher=0",
-        "Include_test=0",
-        "Shortcuts=0",
-        "PrependPath=0"
-    )
+    Write-Host "Using portable NuGet Python package. No system Python or PATH changes are required."
 
-    $process = Start-Process -FilePath $pythonInstaller -ArgumentList ($installArgs -join " ") -Wait -PassThru
-    if ($process.ExitCode -ne 0) {
-        throw "Python installer failed with exit code $($process.ExitCode)."
+    Remove-DirectoryInsideProject $envDir
+    Remove-DirectoryInsideProject $pythonPackageExtractDir
+
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    [System.IO.Compression.ZipFile]::ExtractToDirectory($pythonPackage, $pythonPackageExtractDir)
+
+    $pythonToolsDir = Join-Path $pythonPackageExtractDir "tools"
+    if (-not (Test-Path -LiteralPath (Join-Path $pythonToolsDir "python.exe"))) {
+        throw "Python package did not contain tools\python.exe: $pythonPackage"
     }
 
+    Ensure-Directory $envDir
+    Get-ChildItem -LiteralPath $pythonToolsDir -Force | Copy-Item -Destination $envDir -Recurse -Force
+
     if (-not (Test-Path -LiteralPath $python)) {
-        throw "Python install finished, but python.exe was not found: $python"
+        throw "Python extraction finished, but python.exe was not found: $python"
     }
 }
 
@@ -223,7 +252,12 @@ function Install-RuntimePackages {
         throw "Missing requirements file: $requirements"
     }
 
+    Use-LocalInstallScratch
     Add-CudaDllSearchPath
+
+    Write-Host "Using isolated project Python: $python"
+    Write-Host "Pip cache: $pipCacheDir"
+    Write-Host "Install temp: $installTempDir"
 
     Write-Step "Preparing pip tooling"
     Invoke-Checked -FilePath $python -Arguments @("-m", "ensurepip", "--upgrade")
@@ -231,6 +265,7 @@ function Install-RuntimePackages {
     Invoke-Checked -FilePath $python -Arguments @("-m", "pip", "install", "--no-warn-script-location", "setuptools<81")
 
     Write-Step "Installing PyTorch CUDA 11.8 runtime"
+    Write-Host "PyTorch is installed inside this project folder only. Other Python installations on this computer are not reused."
     Invoke-Checked -FilePath $python -Arguments @(
         "-m", "pip", "install",
         "--no-warn-script-location",
@@ -303,6 +338,7 @@ Write-Host "Python:  $python"
 Write-Host ""
 Write-Host "This installer uses the NVIDIA CUDA 11.8 route only. CPU runtime is intentionally not installed."
 
+Use-LocalInstallScratch
 Test-DiskSpace
 Test-NvidiaDriver
 

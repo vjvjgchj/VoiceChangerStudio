@@ -42,15 +42,17 @@ http://127.0.0.1:6006/local/
 - Windows 10/11 64-bit.
 - NVIDIA GPU with a current NVIDIA driver.
 - Network access for the first install.
-- At least 15 GB free disk space for Python, PyTorch CUDA, ONNX Runtime GPU, and package caches.
+- At least 15 GB free disk space on the project drive for Python, PyTorch CUDA, ONNX Runtime GPU, and package caches.
 
-The installer creates a local Python runtime under:
+The installer extracts a local portable Python runtime under:
 
 ```text
 .mamba-root\envs\vcb-py310
 ```
 
-It does not touch system Python and does not require Python to be in `PATH`.
+It does not touch system Python, does not require Python to be in `PATH`, and can coexist with other Python versions already installed on the computer. Pip cache and install temp files are kept under the project `.tools` folder so the system temp drive is not used for large CUDA downloads.
+
+Each copied project folder owns its own Python environment. PyTorch installed in another VoiceChangerStudio folder or in system Python is intentionally not reused. After one folder finishes installing, rerunning `install-env.bat` in that same folder skips package installation.
 
 Running `install-env.bat` again is safe. It checks the existing CUDA runtime first and skips package installation when Python packages, key project imports, PyTorch CUDA, and ONNX Runtime `CUDAExecutionProvider` are already usable.
 

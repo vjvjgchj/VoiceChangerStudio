@@ -55,7 +55,7 @@ server/
 
 ## 换电脑部署
 
-推荐做轻量 CUDA 安装包：包里只放项目源码、启动器、检查器和安装器；新电脑现场安装本地 Python CUDA 环境，不复制旧电脑的大 `.mamba-root`。
+推荐做轻量 CUDA 安装包：包里只放项目源码、启动器、检查器和安装器；新电脑现场解压项目专用 Python CUDA 环境，不复制旧电脑的大 `.mamba-root`。
 
 旧电脑双击：
 
@@ -77,7 +77,7 @@ check-new-pc.bat
 start-web.bat
 ```
 
-这条路线只支持 NVIDIA / CUDA 11.8，不做 CPU 降级。新电脑需要安装 NVIDIA 驱动，并建议预留至少 15 GB 空间给 Python、PyTorch 和运行依赖。
+这条路线只支持 NVIDIA / CUDA 11.8，不做 CPU 降级。新电脑需要安装 NVIDIA 驱动，并建议在项目所在盘预留至少 15 GB 空间给 Python、PyTorch 和运行依赖。安装器使用项目目录里的便携 Python 和本地 pip 缓存，不使用系统 Python，也不会影响电脑上已有的其他 Python 版本。每个复制出来的项目文件夹都有独立环境；同一文件夹安装完成后再次运行会跳过安装。
 
 重复运行 `install-env.bat` 时会先检测现有 CUDA 环境；依赖、项目关键导入、PyTorch CUDA 和 ONNX CUDA provider 都可用时会跳过安装。
 

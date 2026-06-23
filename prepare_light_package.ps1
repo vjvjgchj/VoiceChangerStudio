@@ -168,6 +168,12 @@ New computer flow:
 6. Double-click check-new-pc.bat.
 7. Double-click start-web.bat.
 
+install-env.bat extracts a project-local Python runtime into .mamba-root.
+It does not use system Python and can coexist with other Python versions.
+Large pip downloads use the project .tools folder for cache and temp files.
+Each copied folder owns its own environment. PyTorch from another folder is not reused,
+but rerunning install-env.bat in the same folder skips installation after the check passes.
+
 This project does not install a CPU route. CUDA is required for the intended performance.
 "@ | Set-Content -LiteralPath $notePath -Encoding UTF8
 
