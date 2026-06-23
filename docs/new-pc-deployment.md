@@ -2,7 +2,7 @@
 
 VoiceChangerStudio is designed to run locally. There are two deployment paths:
 
-- Lightweight CUDA install package: small package, install the runtime on the new computer.
+- Lightweight CUDA install package: includes pretrain files, installs the runtime on the new computer.
 - Full portable package: large package, copy the already-built runtime from a working computer.
 
 For this project, the recommended path is the lightweight CUDA package. CPU runtime is intentionally not installed because the real-time experience is too slow.
@@ -60,6 +60,7 @@ Running `install-env.bat` again is safe. It checks the existing CUDA runtime fir
 
 - Local launcher scripts and the static local UI.
 - Backend inference source in `server/`.
+- Pretrain files in `server\pretrain`.
 - CUDA environment installer: `install_environment.ps1` / `install-env.bat`.
 - Runtime requirements: `requirements-runtime-cuda118.txt`.
 - New computer checker: `setup_new_pc.ps1` / `check-new-pc.bat`.
@@ -67,11 +68,10 @@ Running `install-env.bat` again is safe. It checks the existing CUDA runtime fir
 It intentionally does not include:
 
 - `.mamba-root` Python environment.
-- `server\pretrain` weights.
 - `server\model_dir` voice models.
 - runtime logs, temp files, uploads, recordings, cache files, and Git history.
 
-Copy your models into `server\model_dir`, or upload them in the local UI. For pretrain files, copying `server\pretrain` from the old computer is fastest. The backend can also try to download some missing weights on first start if the new computer can reach the model hosts.
+Copy your models into `server\model_dir`, or upload them in the local UI.
 
 ## Full Portable Package
 

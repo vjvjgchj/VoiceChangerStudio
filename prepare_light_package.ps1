@@ -114,7 +114,6 @@ Invoke-RobocopyChecked `
     -ExtraArgs @(
         "/XD",
         "model_dir",
-        "pretrain",
         "tmp_dir",
         "upload_dir",
         "local_recordings",
@@ -155,7 +154,6 @@ VoiceChangerStudio lightweight CUDA install package
 
 This package intentionally does not include:
 - .mamba-root Python environment
-- server\pretrain weights
 - server\model_dir voice models
 - .tools Node/Micromamba binaries
 
@@ -163,10 +161,9 @@ New computer flow:
 1. Copy this whole folder to the new Windows computer.
 2. Install or update the NVIDIA driver first.
 3. Double-click install-env.bat.
-4. Copy pretrain files into server\pretrain if the check reports them missing.
-5. Copy voice models into server\model_dir or upload them in the local UI.
-6. Double-click check-new-pc.bat.
-7. Double-click start-web.bat.
+4. Copy voice models into server\model_dir or upload them in the local UI.
+5. Double-click check-new-pc.bat.
+6. Double-click start-web.bat.
 
 install-env.bat extracts a project-local Python runtime into .mamba-root.
 It does not use system Python and can coexist with other Python versions.
