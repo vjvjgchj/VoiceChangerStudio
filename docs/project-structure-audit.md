@@ -59,12 +59,10 @@ These are not the future product surface, but should stay until cleanup is verif
 
 - `docs/`
   - Active deployment notes, structure audit, and local console spec.
-- `README.md`, `LICENSE*`
-  - Keep licensing and upstream context until final product packaging is decided.
+- `README.md`, `LICENSE`, `NOTICE.md`
+  - Keep project guidance, source licenses, and third-party runtime/model notices.
 - `server/model_dir_static/`
   - Empty placeholder/static model directory. Low risk; keep until server mounts are simplified.
-- `signatures/`
-  - Small upstream metadata; keep until final cleanup pass.
 
 ## Removed Original Files
 
@@ -97,6 +95,16 @@ These were unrelated to the local-only runtime and have been removed from this p
   - Old browser frontend/client library. No longer mounted or required for runtime.
 - `recorder/`
   - Old standalone recorder UI. No longer mounted or required for runtime.
+- `signatures/`
+  - Upstream CLA signature metadata. Not used by the local app, installer, or packaging flow.
+- `LICENSE-CLA`
+  - Upstream contributor agreement. This project keeps normal contribution guidance in `CONTRIBUTING.md`.
+- `LICENSE-NOTICE`
+  - Replaced by the cleaner local `NOTICE.md`.
+- `server/fillSlot.sh`
+  - Upstream Linux helper for duplicating model slots. Not used by the Windows local launcher.
+- `server/initialize.sh`
+  - Upstream destructive reset helper for `model_dir` and `pretrain`. Not part of the local Windows setup flow.
 
 The external archive is not a runtime dependency. It can be deleted later after the app remains stable across normal launches and the user confirms that rollback/reference files are no longer needed.
 

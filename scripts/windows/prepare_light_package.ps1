@@ -76,6 +76,7 @@ $rootFiles = @(
     ".gitignore",
     "package.json",
     "README.md",
+    "NOTICE.md",
     "requirements-runtime-cuda118.txt",
     "install-env.bat",
     "make-light-package.bat",
@@ -119,7 +120,6 @@ Invoke-RobocopyChecked `
     )
 
 Invoke-RobocopyChecked -Source (Join-Path $projectRoot "docs") -Target (Join-Path $destinationFull "docs")
-Invoke-RobocopyChecked -Source (Join-Path $projectRoot "signatures") -Target (Join-Path $destinationFull "signatures")
 
 $runtimeDirs = @(
     ".tools\cache",

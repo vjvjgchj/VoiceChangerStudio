@@ -80,6 +80,7 @@ $rootFiles = @(
     ".gitignore",
     "package.json",
     "README.md",
+    "NOTICE.md",
     "requirements-runtime-cuda118.txt",
     "start-web.bat",
     "launcher.bat",
@@ -123,7 +124,6 @@ Invoke-RobocopyChecked `
     )
 
 Invoke-RobocopyChecked -Source (Join-Path $projectRoot "docs") -Target (Join-Path $destinationFull "docs")
-Invoke-RobocopyChecked -Source (Join-Path $projectRoot "signatures") -Target (Join-Path $destinationFull "signatures")
 
 if (-not $WithoutPythonEnv) {
     Invoke-RobocopyChecked -Source (Join-Path $projectRoot ".mamba-root\envs") -Target (Join-Path $destinationFull ".mamba-root\envs")
