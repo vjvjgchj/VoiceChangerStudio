@@ -1,12 +1,14 @@
 $ErrorActionPreference = "Stop"
 
-$projectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$projectRoot = (Resolve-Path (Join-Path $scriptDir "..\..")).Path
 $python = Join-Path $projectRoot ".mamba-root\envs\vcb-py310\python.exe"
 $serverDir = Join-Path $projectRoot "server"
 $url = "http://127.0.0.1:6006/local/"
 $helloUrl = "http://127.0.0.1:6006/api/hello"
-$stdoutLog = Join-Path $projectRoot "server.log"
-$stderrLog = Join-Path $projectRoot "server.err.log"
+$logsDir = Join-Path $projectRoot "logs"
+$stdoutLog = Join-Path $logsDir "server.log"
+$stderrLog = Join-Path $logsDir "server.err.log"
 
 function Add-CudaDllSearchPath {
     $envDir = Join-Path $projectRoot ".mamba-root\envs\vcb-py310"
@@ -48,6 +50,9 @@ if (-not (Test-Path -LiteralPath $python)) {
 }
 
 Add-CudaDllSearchPath
+if (-not (Test-Path -LiteralPath $logsDir)) {
+    New-Item -ItemType Directory -Path $logsDir -Force | Out-Null
+}
 
 $listener = Get-VoiceChangerListener
 if (-not $listener) {
@@ -70,4 +75,4 @@ while ((Get-Date) -lt $deadline) {
     Start-Sleep -Milliseconds 500
 }
 
-throw "Voice Changer did not become ready within 30 minutes. Check server.err.log for details."
+throw "Voice Changer did not become ready within 30 minutes. Check logs\server.err.log for details."

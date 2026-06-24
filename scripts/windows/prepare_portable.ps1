@@ -1,14 +1,19 @@
 param(
     [string]$Destination,
+    [switch]$WithoutModels,
+    [switch]$WithoutPythonEnv,
+    [switch]$WithoutPretrain,
+    [switch]$IncludePackageCache,
     [switch]$Zip,
     [switch]$CleanDestination
 )
 
 $ErrorActionPreference = "Stop"
 
-$projectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$projectRoot = (Resolve-Path (Join-Path $scriptDir "..\..")).Path
 if (-not $Destination) {
-    $Destination = Join-Path (Split-Path -Parent $projectRoot) "VoiceChangerStudio-light"
+    $Destination = Join-Path (Split-Path -Parent $projectRoot) "VoiceChangerStudio-portable"
 }
 
 $projectRootFull = [System.IO.Path]::GetFullPath($projectRoot).TrimEnd("\")
@@ -64,7 +69,7 @@ if ((Test-Path -LiteralPath $destinationFull) -and $CleanDestination) {
 New-Item -ItemType Directory -Path $destinationFull -Force | Out-Null
 
 Write-Host ""
-Write-Host "Preparing lightweight VoiceChangerStudio install package"
+Write-Host "Preparing portable VoiceChangerStudio"
 Write-Host "Source:      $projectRootFull"
 Write-Host "Destination: $destinationFull"
 Write-Host ""
@@ -76,28 +81,13 @@ $rootFiles = @(
     "package.json",
     "README.md",
     "requirements-runtime-cuda118.txt",
-    "install_environment.ps1",
-    "prepare_light_package.ps1",
-    "prepare_portable.ps1",
-    "setup_new_pc.ps1",
-    "launch_web.ps1",
-    "local_launcher.ps1",
-    "start_windows.ps1",
-    "stop_windows.ps1",
-    "install-env.bat",
-    "make-light-package.bat",
     "start-web.bat",
     "launcher.bat",
     "check-new-pc.bat",
     "check-and-start.bat",
-    "make-portable.bat",
-    "安装运行环境.bat",
-    "打包轻量安装包.bat",
-    "一键启动并打开Web.bat",
-    "本地启动器.bat",
-    "新电脑部署检查.bat",
-    "部署检查并启动.bat",
-    "打包便携版.bat"
+    "install-env.bat",
+    "make-light-package.bat",
+    "make-portable.bat"
 )
 
 foreach ($file in $rootFiles) {
@@ -108,12 +98,16 @@ Get-ChildItem -LiteralPath $projectRoot -File -Filter "LICENSE*" -ErrorAction Si
     Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $destinationFull $_.Name) -Force
 }
 
+Invoke-RobocopyChecked -Source (Join-Path $projectRoot "scripts") -Target (Join-Path $destinationFull "scripts")
+Invoke-RobocopyChecked -Source (Join-Path $projectRoot "shortcuts") -Target (Join-Path $destinationFull "shortcuts")
+
 Invoke-RobocopyChecked `
     -Source (Join-Path $projectRoot "server") `
     -Target (Join-Path $destinationFull "server") `
     -ExtraArgs @(
         "/XD",
         "model_dir",
+        "pretrain",
         "tmp_dir",
         "upload_dir",
         "local_recordings",
@@ -125,17 +119,37 @@ Invoke-RobocopyChecked `
         "*.pyo",
         "*.wav",
         "vcclient.log",
-        "stored_setting.json",
         "stored_setting.json.bak-*"
     )
 
 Invoke-RobocopyChecked -Source (Join-Path $projectRoot "docs") -Target (Join-Path $destinationFull "docs")
 Invoke-RobocopyChecked -Source (Join-Path $projectRoot "signatures") -Target (Join-Path $destinationFull "signatures")
 
+if (-not $WithoutPythonEnv) {
+    Invoke-RobocopyChecked -Source (Join-Path $projectRoot ".mamba-root\envs") -Target (Join-Path $destinationFull ".mamba-root\envs")
+    Invoke-RobocopyChecked -Source (Join-Path $projectRoot ".mamba-root\condabin") -Target (Join-Path $destinationFull ".mamba-root\condabin")
+    Invoke-RobocopyChecked -Source (Join-Path $projectRoot ".mamba-root\Scripts") -Target (Join-Path $destinationFull ".mamba-root\Scripts")
+    if ($IncludePackageCache) {
+        Invoke-RobocopyChecked -Source (Join-Path $projectRoot ".mamba-root\pkgs") -Target (Join-Path $destinationFull ".mamba-root\pkgs")
+    }
+}
+
+Invoke-RobocopyChecked `
+    -Source (Join-Path $projectRoot ".tools") `
+    -Target (Join-Path $destinationFull ".tools") `
+    -ExtraArgs @("/XD", "micromamba-extract", "/XF", "*.zip", "*.tar.bz2")
+
+if (-not $WithoutPretrain) {
+    Invoke-RobocopyChecked -Source (Join-Path $projectRoot "server\pretrain") -Target (Join-Path $destinationFull "server\pretrain")
+}
+
+if (-not $WithoutModels) {
+    Invoke-RobocopyChecked -Source (Join-Path $projectRoot "server\model_dir") -Target (Join-Path $destinationFull "server\model_dir")
+} else {
+    New-Item -ItemType Directory -Path (Join-Path $destinationFull "server\model_dir") -Force | Out-Null
+}
+
 $runtimeDirs = @(
-    ".tools\cache",
-    "server\model_dir",
-    "server\pretrain",
     "server\tmp_dir",
     "server\upload_dir",
     "server\local_recordings",
@@ -148,30 +162,17 @@ foreach ($dir in $runtimeDirs) {
     New-Item -ItemType Directory -Path (Join-Path $destinationFull $dir) -Force | Out-Null
 }
 
-$notePath = Join-Path $destinationFull "LIGHT_DEPLOYMENT.txt"
+$notePath = Join-Path $destinationFull "PORTABLE_DEPLOYMENT.txt"
 @"
-VoiceChangerStudio lightweight CUDA install package
+VoiceChangerStudio portable package
 
-This package intentionally does not include:
-- .mamba-root Python environment
-- server\model_dir voice models
-- .tools Node/Micromamba binaries
-
-New computer flow:
 1. Copy this whole folder to the new Windows computer.
-2. Install or update the NVIDIA driver first.
-3. Double-click install-env.bat.
-4. Copy voice models into server\model_dir or upload them in the local UI.
-5. Double-click check-new-pc.bat.
-6. Double-click start-web.bat.
+2. Double-click "check-new-pc.bat".
+3. If the check is OK, double-click "start-web.bat".
+4. Open http://127.0.0.1:6006/local/ if the browser does not open automatically.
 
-install-env.bat extracts a project-local Python runtime into .mamba-root.
-It does not use system Python and can coexist with other Python versions.
-Large pip downloads use the project .tools folder for cache and temp files.
-Each copied folder owns its own environment. PyTorch from another folder is not reused,
-but rerunning install-env.bat in the same folder skips installation after the check passes.
-
-This project does not install a CPU route. CUDA is required for the intended performance.
+If models were excluded, copy model files into server\model_dir or upload them in the local UI.
+If Python was excluded, run install-env.bat on the new computer to rebuild the CUDA environment.
 "@ | Set-Content -LiteralPath $notePath -Encoding UTF8
 
 if ($Zip) {
@@ -184,10 +185,9 @@ if ($Zip) {
 }
 
 Write-Host ""
-Write-Host "Lightweight install package is ready:"
+Write-Host "Portable package is ready:"
 Write-Host $destinationFull
 Write-Host ""
 Write-Host "Next step on the new computer:"
-Write-Host "  1. Run install-env.bat"
-Write-Host "  2. Run check-new-pc.bat"
-Write-Host "  3. Run start-web.bat"
+Write-Host "  1. Run check-new-pc.bat"
+Write-Host "  2. Run start-web.bat"

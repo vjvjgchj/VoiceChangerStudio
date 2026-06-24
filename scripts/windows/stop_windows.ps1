@@ -1,6 +1,7 @@
 $ErrorActionPreference = "Stop"
 
-$projectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$projectRoot = (Resolve-Path (Join-Path $scriptDir "..\..")).Path
 $envRoot = Join-Path $projectRoot ".mamba-root"
 
 $processes = Get-Process python -ErrorAction SilentlyContinue | Where-Object {

@@ -1,6 +1,6 @@
 # VoiceChangerStudio Project Structure Audit
 
-Date: 2026-06-23
+Date: 2026-06-25
 Location: `E:\VoiceChangerStudio`
 
 ## Current Goal
@@ -44,16 +44,12 @@ These are required for the current local app:
   - Local Python environment. Required at runtime, but ignored by Git.
 - `.tools/`
   - Bundled Node and micromamba tools. Useful for local setup, ignored by Git.
-- `launch_web.ps1`
-  - Starts backend and opens `http://127.0.0.1:6006/local/`.
-- `local_launcher.ps1`
-  - Software-like launcher for start, stop, model folder, history, logs.
-- `本地启动器.bat`
-  - User-facing launcher entry.
-- `一键启动并打开Web.bat`
-  - User-facing one-click start/open entry.
-- `stop_windows.ps1`
-  - Needed by launcher and UI stop controls.
+- `scripts/windows/`
+  - Windows PowerShell scripts for install, start, stop, deployment checks, and packaging.
+- root `.bat` launchers
+  - English daily entry points kept in the repository root for double-click use.
+- `shortcuts/zh-CN/`
+  - Chinese daily shortcut aliases kept out of the root directory.
 - `.gitignore`
   - Keeps runtime files out of Git.
 
@@ -62,7 +58,7 @@ These are required for the current local app:
 These are not the future product surface, but should stay until cleanup is verified:
 
 - `docs/`
-  - Contains current planning notes plus old docs. Split later into active docs and archived docs.
+  - Active deployment notes, structure audit, and local console spec.
 - `README.md`, `LICENSE*`
   - Keep licensing and upstream context until final product packaging is decided.
 - `server/model_dir_static/`
@@ -124,7 +120,7 @@ Largest runtime-only directories:
 - `server/pretrain/`: about 1.6 GB, ignored
 - `.tools/`: about 135 MB, ignored
 
-Tracked source is now focused on the local app, server runtime, launchers, and docs. Old frontend and recorder source is no longer part of the project tree.
+Tracked source is now focused on the local app, server runtime, organized Windows scripts, shortcuts, and docs. Old frontend and recorder source is no longer part of the project tree.
 
 ## Verification Before Cleanup
 

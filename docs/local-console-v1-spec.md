@@ -10,7 +10,7 @@ VoiceChangerStudio is a local-only voice changer console. The V1 product surface
 - UI: zero-build HTML/CSS/JS in `server/local_console/`
 - Entry: `http://127.0.0.1:6006/local/`
 - Root route: redirects to `/local/`
-- Launcher: `一键启动并打开Web.bat`, `launch_web.ps1`, and `local_launcher.ps1`
+- Launcher: `start-web.bat`, `launcher.bat`, and scripts under `scripts/windows/`
 
 ## Boundaries
 

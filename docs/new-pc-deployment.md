@@ -12,7 +12,7 @@ For this project, the recommended path is the lightweight CUDA package. CPU runt
 On the old computer:
 
 ```powershell
-.\prepare_light_package.ps1
+.\scripts\windows\prepare_light_package.ps1
 ```
 
 Or double-click:
@@ -61,9 +61,9 @@ Running `install-env.bat` again is safe. It checks the existing CUDA runtime fir
 - Local launcher scripts and the static local UI.
 - Backend inference source in `server/`.
 - Pretrain files in `server\pretrain`.
-- CUDA environment installer: `install_environment.ps1` / `install-env.bat`.
+- CUDA environment installer: `scripts\windows\install_environment.ps1` / `install-env.bat`.
 - Runtime requirements: `requirements-runtime-cuda118.txt`.
-- New computer checker: `setup_new_pc.ps1` / `check-new-pc.bat`.
+- New computer checker: `scripts\windows\setup_new_pc.ps1` / `check-new-pc.bat`.
 
 It intentionally does not include:
 
@@ -80,7 +80,7 @@ Use this when you want fewer installation steps on the new computer and do not m
 On the old computer:
 
 ```powershell
-.\prepare_portable.ps1
+.\scripts\windows\prepare_portable.ps1
 ```
 
 Or double-click:
@@ -109,9 +109,9 @@ Runtime logs, temp files, uploads, recordings, cache files, and Git history are 
 ### Smaller Portable Options
 
 ```powershell
-.\prepare_portable.ps1 -WithoutModels
-.\prepare_portable.ps1 -WithoutPretrain
-.\prepare_portable.ps1 -WithoutPythonEnv
+.\scripts\windows\prepare_portable.ps1 -WithoutModels
+.\scripts\windows\prepare_portable.ps1 -WithoutPretrain
+.\scripts\windows\prepare_portable.ps1 -WithoutPythonEnv
 ```
 
 If Python is excluded, run `install-env.bat` on the new computer.
@@ -119,12 +119,12 @@ If Python is excluded, run `install-env.bat` on the new computer.
 For a larger package that also keeps the Micromamba package cache:
 
 ```powershell
-.\prepare_portable.ps1 -IncludePackageCache
+.\scripts\windows\prepare_portable.ps1 -IncludePackageCache
 ```
 
 ## New Computer Check
 
-`setup_new_pc.ps1` checks:
+`scripts\windows\setup_new_pc.ps1` checks:
 
 - Required project files.
 - Runtime folders.
@@ -142,7 +142,7 @@ For a larger package that also keeps the Micromamba package cache:
 To check and start in one step:
 
 ```powershell
-.\setup_new_pc.ps1 -Start
+.\scripts\windows\setup_new_pc.ps1 -Start
 ```
 
 Or double-click:
@@ -151,7 +151,7 @@ Or double-click:
 check-and-start.bat
 ```
 
-Chinese aliases are also kept for daily use: `打包便携版.bat`, `新电脑部署检查.bat`, `部署检查并启动.bat`, and `一键启动并打开Web.bat`.
+Chinese aliases are kept under `shortcuts\zh-CN\` for daily use: `打包便携版.bat`, `新电脑部署检查.bat`, `部署检查并启动.bat`, and `一键启动并打开Web.bat`.
 
 For the lightweight route, the most important daily files are:
 

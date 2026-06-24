@@ -6,7 +6,8 @@ param(
 $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
 
-$projectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$projectRoot = (Resolve-Path (Join-Path $scriptDir "..\..")).Path
 $envDir = Join-Path $projectRoot ".mamba-root\envs\vcb-py310"
 $python = Join-Path $envDir "python.exe"
 $toolsDir = Join-Path $projectRoot ".tools"
@@ -14,7 +15,7 @@ $cacheDir = Join-Path $toolsDir "cache"
 $pipCacheDir = Join-Path $toolsDir "pip-cache"
 $installTempDir = Join-Path $toolsDir "install-temp"
 $requirements = Join-Path $projectRoot "requirements-runtime-cuda118.txt"
-$setupCheck = Join-Path $projectRoot "setup_new_pc.ps1"
+$setupCheck = Join-Path $projectRoot "scripts\windows\setup_new_pc.ps1"
 $pythonVersion = "3.10.11"
 $pythonPackage = Join-Path $cacheDir "python.$pythonVersion.nupkg"
 $pythonPackageUrl = "https://www.nuget.org/api/v2/package/python/$pythonVersion"
@@ -344,7 +345,7 @@ Test-NvidiaDriver
 
 if ($Force -and (Test-Path -LiteralPath $envDir)) {
     Write-Step "Removing existing Python environment"
-    $stopScript = Join-Path $projectRoot "stop_windows.ps1"
+    $stopScript = Join-Path $projectRoot "scripts\windows\stop_windows.ps1"
     if (Test-Path -LiteralPath $stopScript) {
         & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $stopScript | Out-Host
     }

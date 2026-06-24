@@ -203,8 +203,8 @@ class MMVC_Rest_LocalSystem:
         dependency = self._dependency_check()
         model_dir = (self.server_root / self.voiceChangerParams.model_dir).resolve()
         port = self._port_status()
-        launch_script = self.project_root / "launch_web.ps1"
-        stop_script = self.project_root / "stop_windows.ps1"
+        launch_script = self._windows_script("launch_web.ps1")
+        stop_script = self._windows_script("stop_windows.ps1")
         checks = [
             {
                 "id": "python",
@@ -281,6 +281,9 @@ class MMVC_Rest_LocalSystem:
     def _ps_quote(self, path: Path) -> str:
         return "'" + str(path).replace("'", "''") + "'"
 
+    def _windows_script(self, name: str) -> Path:
+        return self.project_root / "scripts" / "windows" / name
+
     def _run_powershell_later(self, command: str) -> None:
         def runner() -> None:
             popen_kwargs: dict[str, Any] = {}
@@ -297,13 +300,13 @@ class MMVC_Rest_LocalSystem:
         threading.Timer(0.6, runner).start()
 
     def stop_backend(self):
-        stop_script = self.project_root / "stop_windows.ps1"
+        stop_script = self._windows_script("stop_windows.ps1")
         self._run_powershell_later(f"Start-Sleep -Milliseconds 600; & {self._ps_quote(stop_script)}")
         return JSONResponse(content=jsonable_encoder({"status": "stopping", "message": "正在停止本地后端"}))
 
     def restart_backend(self):
-        stop_script = self.project_root / "stop_windows.ps1"
-        launch_script = self.project_root / "launch_web.ps1"
+        stop_script = self._windows_script("stop_windows.ps1")
+        launch_script = self._windows_script("launch_web.ps1")
         command = f"Start-Sleep -Milliseconds 600; & {self._ps_quote(stop_script)}; Start-Sleep -Seconds 2; & {self._ps_quote(launch_script)}"
         self._run_powershell_later(command)
         return JSONResponse(content=jsonable_encoder({"status": "restarting", "message": "正在重启本地后端"}))

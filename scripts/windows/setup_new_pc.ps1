@@ -5,12 +5,13 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$projectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$projectRoot = (Resolve-Path (Join-Path $scriptDir "..\..")).Path
 $serverDir = Join-Path $projectRoot "server"
 $python = Join-Path $projectRoot ".mamba-root\envs\vcb-py310\python.exe"
 $node = Join-Path $projectRoot ".tools\node-v20.20.2-win-x64\node.exe"
-$launchScript = Join-Path $projectRoot "launch_web.ps1"
-$installScript = Join-Path $projectRoot "install_environment.ps1"
+$launchScript = Join-Path $projectRoot "scripts\windows\launch_web.ps1"
+$installScript = Join-Path $projectRoot "scripts\windows\install_environment.ps1"
 $installBat = Join-Path $projectRoot "install-env.bat"
 
 $checks = New-Object System.Collections.Generic.List[object]
@@ -156,8 +157,8 @@ Write-Host "Project: $projectRoot"
 Write-Host ""
 
 $requiredFiles = @(
-    "launch_web.ps1",
-    "local_launcher.ps1",
+    "scripts\windows\launch_web.ps1",
+    "scripts\windows\local_launcher.ps1",
     "server\MMVCServerSIO.py",
     "server\local_console\index.html",
     "server\local_console\app.js",
@@ -275,7 +276,7 @@ print(f"inputs={inputs}, outputs={outputs}")
         Add-Check "Python packages" "WARN" "Import check skipped by -SkipImportCheck."
     }
 } else {
-    $fix = if (Test-Path -LiteralPath $installBat) { "Run install-env.bat to create the local CUDA Python environment." } elseif (Test-Path -LiteralPath $installScript) { "Run install_environment.ps1 to create the local CUDA Python environment." } else { "Copy a full portable package that includes .mamba-root, or restore install-env.bat." }
+    $fix = if (Test-Path -LiteralPath $installBat) { "Run install-env.bat to create the local CUDA Python environment." } elseif (Test-Path -LiteralPath $installScript) { "Run scripts\windows\install_environment.ps1 to create the local CUDA Python environment." } else { "Copy a full portable package that includes .mamba-root, or restore install-env.bat." }
     Add-Check "Python environment" "FAIL" "Missing: $python" $fix
 }
 

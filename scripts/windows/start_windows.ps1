@@ -1,6 +1,7 @@
 $ErrorActionPreference = "Stop"
 
-$projectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$projectRoot = (Resolve-Path (Join-Path $scriptDir "..\..")).Path
 $python = Join-Path $projectRoot ".mamba-root\envs\vcb-py310\python.exe"
 $serverDir = Join-Path $projectRoot "server"
 

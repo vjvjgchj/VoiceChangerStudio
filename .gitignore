@@ -3,6 +3,11 @@
 .tools/
 venv/
 node_modules/
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
 
 # Voice changer data
 server/model_dir/

@@ -7,13 +7,15 @@ $ErrorActionPreference = "Stop"
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
-$projectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$projectRoot = (Resolve-Path (Join-Path $scriptDir "..\..")).Path
 $python = Join-Path $projectRoot ".mamba-root\envs\vcb-py310\python.exe"
 $serverDir = Join-Path $projectRoot "server"
 $url = "http://127.0.0.1:6006/local/"
 $helloUrl = "http://127.0.0.1:6006/api/hello"
-$serverLog = Join-Path $projectRoot "server.log"
-$errorLog = Join-Path $projectRoot "server.err.log"
+$logsDir = Join-Path $projectRoot "logs"
+$serverLog = Join-Path $logsDir "server.log"
+$errorLog = Join-Path $logsDir "server.err.log"
 $modelDir = Join-Path $serverDir "model_dir"
 $historyDir = Join-Path $serverDir "local_recordings"
 
@@ -40,7 +42,7 @@ function Start-VoiceChanger {
         [System.Windows.Forms.MessageBox]::Show("Python CUDA environment was not found:`n$python`n`nRun install-env.bat first:`n$installBat", "Voice Changer", "OK", "Error") | Out-Null
         return
     }
-    $script = Join-Path $projectRoot "launch_web.ps1"
+    $script = Join-Path $projectRoot "scripts\windows\launch_web.ps1"
     $launchArgs = "-NoProfile -ExecutionPolicy Bypass -File `"$script`""
     Start-Process `
         -FilePath "powershell.exe" `
@@ -52,7 +54,7 @@ function Start-VoiceChanger {
 }
 
 function Stop-VoiceChanger {
-    $script = Join-Path $projectRoot "stop_windows.ps1"
+    $script = Join-Path $projectRoot "scripts\windows\stop_windows.ps1"
     try {
         & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $script | Out-Null
         $statusLabel.Text = "Server stopped. Python memory has been released."
